@@ -1,0 +1,948 @@
+---
+title: "101C Project"
+author: "Joseph Fregault"
+date: "11/22/2019"
+output: pdf_document
+---
+
+
+```{r}
+Data = read.csv("train.csv")
+Test = read.csv("test.csv")
+
+#View(trainD)
+#attach(trainD)
+```
+
+
+```{r}
+library(tidyverse)
+library(broom)
+library(glmnet)
+library(leaps)
+library(caret)
+library(MASS)
+library(tree)
+#install.packages("gbm")
+library(gbm)
+```
+
+
+```{r}
+save(bag_data,file='bag_data.rda')
+save(bag_data2,file='bag_data2.rda')
+save(bag_data4,file='bag_data4.rda')
+save(bag_data4_new,file='bag_data4_new.rda')
+save(bag_data4_1,file='bag_data4_1.rda')
+save(bag_data10,file='bag_data10.rda')
+save(bag_data5, file = "bag_data5.rda")
+save(bag_data6, file = "bag_data6.rda")
+save(bag_data7, file = "bag_data7.rda")
+save(bag_data8, file = "bag_data8.rda")
+save(bag_data8.1, file = "bag_data8_1.rda")
+save(bag_data9, file = "bag_data9.rda")
+save(bag_data11, file = "bag_data11.rda")
+save(bag_data12, file = "bag_data12.rda")
+save(bag_dat13, file = "bag_data13.rda")
+save(bag_data14, file = "bag_data14.rda")
+save(bag_data15, file = "bag_data15.rda")
+save(bag_data15_2, file = "bag_data15_2.rda")
+save(bag_data16, file = "bag_data16.rda")
+save(bag_data17, file = "bag_data17.rda")
+save(bag_data18, file = "bag_data18.rda")
+save(bag_data19, file = "bag_data19.rda")
+
+save(bag_dota, file = "bag_dota.rda")
+
+save(bag_data20,file='bag_data20.rda')
+save(boost_mod,file='boost_mod.rda')
+save(boost_mod2,file='boost_mod2.rda')
+save(boost_mod3,file='boost_mod3.rda')
+```
+
+```{r}
+load(file='bag_data.rda')
+load(file='bag_data2.rda')
+load(file='bag_data4.rda')
+load(file='bag_data10.rda')
+load(file='boost_mod.rda')
+load(file='boost_mod2.rda')
+load(file='bag_data15.rda')
+load(fil='boost_mod3.rda ')
+ls()
+getwd()
+```
+
+```{r}
+tree_mod <- tree(HTWins ~.,data=Data)
+summary(tree_mod)
+```
+
+```{r}
+set.seed(123) 
+data_train = sample(1: nrow(Data), 8000) 
+data_test = Data[-data_train,] 
+wins_test = Data$HTWins[-data_train]
+
+
+#tree_mod_train = tree(HTWins∼.-gameID,data=Data,subset=data_train) 
+#tree_pred = predict(tree_mod_train,data_test,type="class")  
+
+#table(tree_pred, wins_test)
+(219 + 758) / (401 + 142 + 219 + 758)
+```
+
+--------------------------------------------------------------------------------------
+
+```{r}
+library(randomForest)
+
+Data <- read.csv("train.csv")
+Test <- read.csv("test.csv")
+HTWins = as.numeric(as.factor(Data$HTWins))
+lengthy <- 1:length(HTWins)
+for (i in lengthy) {
+  if (HTWins[i] == 1)
+    HTWins[i] = 0
+  else
+    HTWins[i] = 1
+}
+Data$HTWins <- HTWins
+
+set.seed(123)
+```
+
+
+```{r}
+bag_doota <- randomForest(HTWins~.,data=Data,subset=data_train,importance=TRUE)
+bag_doota
+
+importance(bag_doota)
+
+bag_dota_1 <- randomForest(HTWins~ VTcumRest + HTcumRest + VT + HT + VT.TA.ast + VT.S1.plmin + VT.S1.plmin + VT.S3.plmin + VT.S4.plmin + HT.TA.ast + HT.S1.plmin + HT.S2.plmin + HT.S3.plmin + HT.S4.plmin + HT.S5.plmin ,data=Data,subset=data_train,importance=TRUE)
+bag_dota_1
+
+bag_dota_2 <- randomForest(HTWins~. -HT.TS.stl - HT.TS.pf ,data= Data, subset=data_train, importance = TRUE)
+bag_dota_2
+```
+
+```{r}
+yhat_bag <- predict(bag_doota,newdata=data_test) #mtry = 4
+yhat_bag <- ifelse(yhat_bag > 0.5, 1, 0)
+mean((yhat_bag == wins_test))
+```
+
+```{r}
+bag_data4_new <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=4,importance=TRUE)
+bag_data4_new
+```
+```{r}
+yhat_bag <- predict(bag_data4_new,newdata=data_test) #mtry = 4
+yhat_bag <- ifelse(yhat_bag > 0.5, 1, 0)
+mean((yhat_bag == wins_test))
+```
+
+```{r}
+bag_data3_new <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=3,importance=TRUE)
+bag_data3_new
+```
+
+```{r}
+yhat_bag <- predict(bag_data3_new,newdata=data_test) #mtry = 3
+yhat_bag <- ifelse(yhat_bag > 0.5, 1, 0)
+mean((yhat_bag == wins_test))
+
+yhat_bag <- predict(bag_data15_new,newdata=data_test) #mtry = 15
+yhat_bag <- ifelse(yhat_bag > 0.5, 1, 0)
+mean((yhat_bag == wins_test))
+```
+
+```{r}
+yhat_bag <- predict(bag_dota,newdata=data_test) #mtry = default
+yhat_bag <- ifelse(yhat_bag > 0.5, 1, 0)
+mean((yhat_bag == wins_test))
+
+yhat_bag <- predict(bag_dota_1,newdata=data_test) #mtry = default
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+#bag_data2 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=2,importance=TRUE)
+bag_data2
+```
+
+```{r}
+#bag_data4 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=4,importance=TRUE)
+bag_data4
+```
+
+```{r}
+bag_data5 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=5,importance=TRUE)
+bag_data5
+```
+
+```{r}
+bag_data6 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=6,importance=TRUE)
+bag_data6
+```
+
+```{r}
+bag_data7 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=7,importance=TRUE)
+bag_data7
+```
+
+```{r}
+bag_data8 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=8,importance=TRUE)
+bag_data8
+```
+
+```{r}
+bag_data9 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=9,importance=TRUE)
+bag_data9
+```
+
+```{r}
+bag_data10 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=10,importance=TRUE)
+bag_data10
+```
+
+```{r}
+bag_data11 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=11,importance=TRUE)
+bag_data11
+```
+
+```{r}
+bag_data12 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=12,importance=TRUE)
+bag_data12
+```
+
+```{r}
+bag_dat13 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=13,importance=TRUE)
+bag_dat13
+```
+
+```{r}
+bag_data14 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=14,importance=TRUE)
+bag_data14
+```
+
+```{r}
+bag_data15_new <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=15,importance=TRUE)
+bag_data15
+```
+
+```{r}
+bag_data16 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=16,importance=TRUE)
+bag_data16
+```
+
+```{r}
+bag_data17 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=17,importance=TRUE)
+bag_data17
+```
+
+```{r}
+bag_data18 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=18,importance=TRUE)
+bag_data18
+```
+
+```{r}
+bag_data19 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=19,importance=TRUE)
+bag_data19
+```
+
+```{r}
+bag_data20 <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=20,importance=TRUE)
+bag_data20
+```
+
+The first column tells us the % increase in MSE when that variable is excluded 
+```{r}
+importance(bag_data4)
+```
+
+
+
+```{r}
+yhat_bag <- predict(bag_data,newdata=data_test) #mtry = 3
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data2,newdata=data_test) #mtry = 2
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+
+yhat_bag <- predict(bag_data4,newdata=data_test) #mtry = 4
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data5,newdata=data_test) #mtry =5
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data6,newdata=data_test) #mtry =6
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data7,newdata=data_test) #mtry =7
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data8,newdata=data_test) #mtry =8
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data9,newdata=data_test) #mtry =9
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data10,newdata=data_test) #mtry =10
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_data11,newdata=data_test) #mtry =11
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data12,newdata=data_test) #mtry =12
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_dat13,newdata=data_test) #mtry =13
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+yhat_bag <- predict(bag_data14,newdata=data_test) #mtry =14
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_data15,newdata=data_test) #mtry =15
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+
+```
+```{r}
+yhat_bag <- predict(bag_data16,newdata=data_test) #mtry =16
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_data17,newdata=data_test) #mtry =17
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_data18,newdata=data_test) #mtry =18
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_data19,newdata=data_test) #mtry =19
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+
+```{r}
+yhat_bag <- predict(bag_data20,newdata=data_test) #mtry =20
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+
+```{r}
+n = length(HTWins)
+ct = 0
+
+for (i in 1:n)
+{
+  if (yhat_bag[i] == HTWins[i])
+  {
+    ct = ct + 1
+  }
+}
+
+yhat_bag[i]
+total = ct/n
+```
+
+
+```{r}
+importance(bag_data15)
+```
+
+
+```{r}
+bag_data15_2 <- randomForest(HTWins~gameID +
+VT +
+HT +
+HTleague +
+date +
+VTcumRest +
+HTcumRest    +
+VT.TS.fgm +
+VT.TS.fga  +
+VT.TS.tpm  +
+VT.TS.tpa    +
+VT.TS.fta   +
+VT.TS.oreb   +
+VT.TS.dreb    +
+VT.TS.ast   +
+VT.TS.stl   +
+VT.TS.blk  +
+VT.TS.to    +
+VT.TS.pf  +
+VT.TS.pts  +
+VT.TA.fgm     +
+VT.TA.fga     +
+VT.TA.tpm    +
+VT.TA.tpa     +
+VT.TA.fta   +
+VT.TA.oreb  +
+VT.TA.dreb    +
+VT.TA.ast  +
+VT.TA.stl     +
+VT.TA.blk    +
+VT.TA.to      +
+VT.TA.pf     +
+VT.TA.pts     +
+VT.OTS.fgm    +
+VT.OTS.fga   +
+VT.OTS.tpm    +
+VT.OTS.tpa    +
+VT.OTS.fta    +
+VT.OTS.oreb  +
+VT.OTS.dreb   +
+VT.OTS.ast    +
+VT.OTS.stl    +
+VT.OTS.blk   +
+VT.OTS.to     +
+VT.OTS.pf     +
+VT.OTS.pts    +
+VT.OTA.fgm   +
+VT.OTA.fga   +
+VT.OTA.tpm    +
+VT.OTA.tpa  +
+VT.OTA.fta    +
+VT.OTA.oreb   +
+VT.OTA.dreb   +
+VT.OTA.ast   +
+VT.OTA.stl    +
+VT.OTA.blk   +
+VT.OTA.to     +
+VT.OTA.pf     +
+VT.OTA.pts    +
+VT.S1.plmin  +
+VT.S1.pts  +
+VT.S1.stl    +
+VT.S1.ast    +
+VT.S2.plmin  +
+VT.S2.pts   +
+VT.S2.min     +
+VT.S2.stl    +
+VT.S2.ast   +
+VT.S3.plmin+
+VT.S3.pts    +
+VT.S3.min   +
+VT.S3.stl   +
+VT.S3.ast    +
+VT.S4.plmin   +
+VT.S4.pts     +
+VT.S4.min     +
+VT.S4.stl   +
+VT.S5.plmin  +
+VT.S5.pts     +
+VT.S5.min     +
+VT.S5.stl     +
+VT.S5.ast     +
+VT.OS1.plmin +
+VT.OS1.dreb   +
+VT.OS1.to    +
+VT.OS1.fgm    +
+VT.OS1.oreb  +
+VT.OS2.plmin +
+VT.OS2.dreb   +
+VT.OS2.to     +
+VT.OS2.fgm    +
+VT.OS2.oreb   +
+VT.OS3.plmin +
+VT.OS3.dreb   +
+VT.OS3.to    +
+VT.OS3.fgm   +
+VT.OS3.oreb   +
+VT.OS4.plmin+
+VT.OS4.dreb  +
+VT.OS4.to    +
+VT.OS4.fgm    +
+VT.OS4.oreb   +
+VT.OS5.plmin +
+VT.OS5.dreb   +
+VT.OS5.to    +
+VT.OS5.fgm    +
+VT.OS5.oreb   +
+VT.pmxU      +
+VT.pmxW      +
+HT.TS.fgm     +
+HT.TS.fga     +
+HT.TS.tpm    +
+HT.TS.tpa    +
+HT.TS.fta     +
+HT.TS.oreb    +
+HT.TS.dreb   +
+HT.TS.ast   +
+HT.TS.stl     +
+HT.TS.blk    +
+HT.TS.to      +
+HT.TS.pf      +
+HT.TS.pts    +
+HT.TA.fgm     +
+HT.TA.fga  +
+HT.TA.tpm   +
+HT.TA.tpa   +
+HT.TA.fta   +
+HT.TA.oreb    +
+HT.TA.dreb  +
+HT.TA.ast    +
+HT.TA.stl    +
+HT.TA.blk   +
+HT.TA.to     +
+HT.TA.pf    +
+HT.TA.pts   +
+HT.OTS.fgm   +
+HT.OTS.fga   +
+HT.OTS.tpm    +
+HT.OTS.tpa   +
+HT.OTS.fta    +
+HT.OTS.oreb  +
+HT.OTS.dreb   +
+HT.OTS.ast    +
+HT.OTS.stl    +
+HT.OTS.blk   +
+HT.OTS.to     +
+HT.OTS.pf    +
+HT.OTS.pts   +
+HT.OTA.fgm    +
+HT.OTA.fga   +
+HT.OTA.tpm   +
+HT.OTA.tpa    +
+HT.OTA.fta   +
+HT.OTA.oreb   +
+HT.OTA.dreb   +
+HT.OTA.ast   +
+HT.OTA.stl    +
+HT.OTA.blk    +
+HT.OTA.to    +
+HT.OTA.pf     +
+HT.OTA.pts  +
+HT.S1.plmin  +
+HT.S1.pts    +
+HT.S1.min    +
+HT.S1.stl    +
+HT.S1.ast    +
+HT.S2.plmin  +
+HT.S2.pts   +
+HT.S2.min    +
+HT.S2.stl    +
+HT.S2.ast   +
+HT.S3.plmin  +
+HT.S3.pts     +
+HT.S3.min    +
+HT.S3.stl     +
+HT.S3.ast     +
+HT.S4.plmin  +
+HT.S4.pts     +
+HT.S4.min    +
+HT.S4.stl     +
+HT.S4.ast    +
+HT.S5.plmin +
+HT.S5.stl    +
+HT.S5.ast     +
+HT.OS1.plmin +
+HT.OS1.dreb  +
+HT.OS1.to     +
+HT.OS1.fgm    +
+HT.OS1.oreb  +
+HT.OS2.plmin +
+HT.OS2.dreb   +
+HT.OS2.fgm    +
+HT.OS2.oreb   +
+HT.OS3.plmin +
+HT.OS3.dreb  +
+HT.OS3.to    +
+HT.OS3.fgm    +
+HT.OS3.oreb  +
+HT.OS4.plmin  +
+HT.OS4.dreb  +
+HT.OS4.to    +
+HT.OS4.oreb+
+HT.OS5.plmin +
+HT.OS5.dreb   +
+HT.OS5.to    +
+HT.OS5.fgm    +
+HT.pmxU       +
+HT.pmxW, data = Data, subset = data_train, mtry=15, importance = T)
+
+bag_data15_2
+```
+
+```{r}
+yhat_bag <- predict(bag_data15_2,newdata=data_test) #mtry = 15_2
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+#importance(bag_data)
+importance(bag_data8)
+
+#Vars with %IncMSE > 10
+#VT + HT +VT.S1.plmin + VT.S3.plmin + VT.S2.plmin + VT.OS1.plmin + VT.OS2.plmin + VT.OS3.plmin + VT.OS4.plmin
+
+#vars with %incMSE > 5
+#VT + HT +VT.S1.plmin + VT.S3.plmin + VT.S2.plmin + VT.OS1.plmin + VT.OS2.plmin + VT.OS3.plmin + VT.OS4.plmin + VTcumRest + VT.TS.dreb + VT.TS.ast + VT.TS.pts + VT.TA.ast + VT.TA.pts + VT.OTS.blk + VT.OTS.pts + VT.OTA.fgm + VT.OTA.dreb + VT.OTA.ast + VT.OTA.blk + VT.OTA.pts + VT.S5.plmin + VT.S4.plmin + VT.OS5.plmin + VT.pmxU + HT.TS.tpm + HT.TS.dreb + HT.TS.ast + HT.TS.blk + HT.TS.pts + HT.TA.fgm + HT.TA.dreb + HT.TA.ast + HT.TA.pts + HT.OTS.dreb + HT.OTS.pts + HT.OTA.fgm + HT.OTA.fta + HT.OTA.ast + HT.OTA.blk + HT.S1.pts + HT.OS4.plmin + HT.OS5.plmin + HT.pmxU
+```
+
+```{r}
+bag_data8.1 <- randomForest(HTWins~VT + HT +VT.S1.plmin + VT.S3.plmin + VT.S2.plmin + VT.OS1.plmin + VT.OS2.plmin + VT.OS3.plmin + VT.OS4.plmin ,data=Data,subset=data_train,mtry=8,importance=TRUE)
+
+bag_data8.1
+```
+
+```{r}
+yhat_bag <- predict(bag_data8.1,newdata=data_test) #mtry = 8.1
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+bag_data8_2 <- randomForest(HTWins~VT + HT +VT.S1.plmin + VT.S3.plmin + VT.S2.plmin + VT.OS1.plmin + VT.OS2.plmin + VT.OS3.plmin + VT.OS4.plmin + VTcumRest + VT.TS.dreb + VT.TS.ast + VT.TS.pts + VT.TA.ast + VT.TA.pts + VT.OTS.blk + VT.OTS.pts + VT.OTA.fgm + VT.OTA.dreb + VT.OTA.ast + VT.OTA.blk + VT.OTA.pts + VT.S5.plmin + VT.S4.plmin + VT.OS5.plmin + VT.pmxU + HT.TS.tpm + HT.TS.dreb + HT.TS.ast + HT.TS.blk + HT.TS.pts + HT.TA.fgm + HT.TA.dreb + HT.TA.ast + HT.TA.pts + HT.OTS.dreb + HT.OTS.pts + HT.OTA.fgm + HT.OTA.fta + HT.OTA.ast + HT.OTA.blk + HT.S1.pts + HT.OS4.plmin + HT.OS5.plmin + HT.pmxU ,data=Data,subset=data_train,mtry=8,importance=TRUE)
+
+bag_data8_2
+```
+
+```{r}
+bag_data4_1 <- randomForest(HTWins~id +
+gameID +
+VT +
+HT +
+HTleague +
+date +
+VTcumRest +
+HTcumRest +
+VT.TS.fgm +
+VT.TS.fga +
+VT.TS.tpm +
+VT.TS.tpa +
+VT.TS.fta +
+VT.TS.oreb+
+VT.TS.dreb +
+VT.TS.ast +
+VT.TS.stl +
+VT.TS.blk +
+VT.TS.to +
+VT.TS.pf +
+VT.TS.pts +
+VT.TA.fgm +
+VT.TA.fga +
+VT.TA.tpm +
+VT.TA.tpa +
+VT.TA.fta +
+VT.TA.oreb +
+VT.TA.dreb +
+VT.TA.ast +
+VT.TA.stl +
+VT.TA.blk +
+VT.TA.to +
+VT.TA.pf +
+VT.TA.pts +
+VT.OTS.fgm +
+VT.OTS.fga +
+VT.OTS.tpm +
+VT.OTS.tpa +
+VT.OTS.fta +
+VT.OTS.oreb +
+VT.OTS.dreb +
+VT.OTS.ast +
+VT.OTS.stl +
+VT.OTS.blk +
+VT.OTS.to +
+VT.OTS.pf +
+VT.OTS.pts +
+VT.OTA.fgm +
+VT.OTA.fga +
+VT.OTA.tpm +
+VT.OTA.tpa +
+VT.OTA.fta +
+VT.OTA.oreb +
+VT.OTA.dreb +
+VT.OTA.ast +
+VT.OTA.stl +
+VT.OTA.blk +
+VT.OTA.to +
+VT.OTA.pf +
+VT.OTA.pts +
+VT.S1.plmin +
+VT.S1.pts +
+VT.S1.min +
+VT.S1.stl +
+VT.S1.ast +
+VT.S2.plmin +
+VT.S2.pts +
+VT.S2.min +
+VT.S2.ast +
+VT.S3.plmin+
+VT.S3.pts +
+VT.S3.min +
+VT.S3.ast +
+VT.S4.plmin +
+VT.S4.pts +
+VT.S5.plmin +
+VT.S5.pts +
+VT.S5.min +
+VT.OS1.plmin +
+VT.OS1.dreb +
+VT.OS1.to +
+VT.OS1.fgm +
+VT.OS1.oreb +
+VT.OS2.plmin +
+VT.OS2.dreb +
+VT.OS2.fgm +
+VT.OS2.oreb +
+VT.OS3.plmin +
+VT.OS3.dreb +
+VT.OS3.fgm +
+VT.OS4.plmin+
+VT.OS4.dreb +
+VT.OS4.to +
+VT.OS4.oreb +
+VT.OS5.plmin +
+VT.OS5.dreb +
+VT.OS5.to +
+VT.OS5.fgm +
+VT.pmxU +
+VT.pmxW +
+HT.TS.fgm +
+HT.TS.fga +
+HT.TS.tpm +
+HT.TS.tpa +
+HT.TS.fta +
+HT.TS.oreb +
+HT.TS.dreb +
+HT.TS.ast +
+HT.TS.stl +
+HT.TS.blk +
+HT.TS.to +
+HT.TS.pf +
+HT.TS.pts +
+HT.TA.fgm +
+HT.TA.fga +
+HT.TA.tpm +
+HT.TA.tpa +
+HT.TA.fta +
+HT.TA.oreb +
+HT.TA.dreb +
+HT.TA.ast +
+HT.TA.stl +
+HT.TA.blk +
+HT.TA.to +
+HT.TA.pf +
+HT.TA.pts +
+HT.OTS.fgm +
+HT.OTS.fga +
+HT.OTS.tpm +
+HT.OTS.tpa +
+HT.OTS.fta +
+HT.OTS.oreb +
+HT.OTS.dreb +
+HT.OTS.ast +
+HT.OTS.stl +
+HT.OTS.blk +
+HT.OTS.to +
+HT.OTS.pf +
+HT.OTS.pts +
+HT.OTA.fgm +
+HT.OTA.fga +
+HT.OTA.tpm +
+HT.OTA.tpa +
+HT.OTA.fta +
+HT.OTA.oreb +
+HT.OTA.dreb +
+HT.OTA.ast +
+HT.OTA.stl +
+HT.OTA.blk +
+HT.OTA.to +
+HT.OTA.pf +
+HT.OTA.pts +
+HT.S1.plmin +
+HT.S1.pts +
+HT.S1.min +
+HT.S1.stl +
+HT.S1.ast +
+HT.S2.plmin +
+HT.S2.pts +
+HT.S2.min +
+HT.S2.stl +
+HT.S2.ast +
+HT.S3.plmin +
+HT.S3.pts +
+HT.S3.min +
+HT.S3.stl +
+HT.S3.ast +
+HT.S4.plmin +
+HT.S4.pts +
+HT.S4.min +
+HT.S4.stl +
+HT.S5.plmin +
+HT.S5.pts+
+HT.S5.min +
+HT.S5.stl +
+HT.S5.ast +
+HT.OS1.plmin +
+HT.OS1.dreb +
+HT.OS1.to +
+HT.OS1.fgm +
+HT.OS1.oreb +
+HT.OS2.plmin +
+HT.OS2.dreb +
+HT.OS2.fgm +
+HT.OS3.plmin +
+HT.OS3.dreb +
+HT.OS3.to +
+HT.OS3.oreb +
+HT.OS4.plmin +
+HT.OS4.dreb +
+HT.OS4.oreb+
+HT.OS5.plmin +
+HT.OS5.dreb +
+HT.OS5.oreb +
+HT.pmxU +
+HT.pmxW,data=Data,subset=data_train,mtry=4,importance=TRUE)
+
+bag_data4_1
+```
+
+```{r}
+yhat_bag <- predict(bag_data4_1,newdata=data_test) #mtry = 8_2
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+yhat_bag <- predict(bag_data8_2,newdata=data_test) #mtry = 8_2
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+```
+
+```{r}
+bag_data15_1 <- randomForest(HTWins~VT + HT +VT.S1.plmin + VT.S3.plmin + VT.S2.plmin + VT.OS1.plmin + VT.OS2.plmin + VT.OS3.plmin + VT.OS4.plmin + VTcumRest + VT.TS.dreb + VT.TS.ast + VT.TS.pts + VT.TA.ast + VT.TA.pts + VT.OTS.blk + VT.OTS.pts + VT.OTA.fgm + VT.OTA.dreb + VT.OTA.ast + VT.OTA.blk + VT.OTA.pts + VT.S5.plmin + VT.S4.plmin + VT.OS5.plmin + VT.pmxU + HT.TS.tpm + HT.TS.dreb + HT.TS.ast + HT.TS.blk + HT.TS.pts + HT.TA.fgm + HT.TA.dreb + HT.TA.ast + HT.TA.pts + HT.OTS.dreb + HT.OTS.pts + HT.OTA.fgm + HT.OTA.fta + HT.OTA.ast + HT.OTA.blk + HT.S1.pts + HT.OS4.plmin + HT.OS5.plmin + HT.pmxU ,data=Data,subset=data_train,mtry=15,importance=TRUE)
+
+bag_data15_1
+```
+
+```{r}
+yhat_bag <- predict(bag_data15_1,newdata=data_test) #mtry = 15_1
+#yhat_bag
+mean((yhat_bag - wins_test)^2)
+yhat_bag
+```
+
+
+```{r}
+HTWins <- predict(bag_data4,Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB6.csv")
+
+
+#SUB1 --- glm() with 2 key variables I think
+#SUB2 --- a forest or random forest one
+#SUB3 --- IDK
+#SUB4 --- boost_mod2
+#SUB5 --- boost_mod5
+#SUB6 --- bag_data4
+#SUB7 --- bag_data20
+#SUB8 --- bag_data15_1
+```
+
+
+```{r}
+bag_mod <- randomForest(HTWins~.,data=Data,subset=data_train,mtry=3,n.tree=25)
+
+```
+
+```{r}
+yhat.bag = predict (bag_mod,newdata=data_test) 
+mean((yhat.bag - wins_test)^2) 
+```
+
+
+```{r}
+#boost_mod5 =gbm(HTWins∼.,data=Data,distribution= "bernoulli",n.trees=5000,interaction.depth=3,shrinkage=0.0001, verbose=F) 
+
+HTWins <- predict(boost_mod5,newdata=Test,n.trees = 5000)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB5.csv")
+```
+
+```{r}
+HTWins <- predict(bag_data20,newdata=Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB7.csv")
+```
+
+```{r}
+HTWins <- predict(bag_data15_1,newdata=Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB8.csv")
+```
+
+```{r}
+HTWins <- predict(bag_data15,newdata=Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB9.csv")
+```
+
+```{r}
+HTWins <- predict(bag_data15_2,newdata=Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB10.csv")
+```
+
+```{r}
+HTWins <- predict(bag_data4_1,newdata=Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB11.csv")
+```
+
+```{r}
+HTWins <- predict(bag_doota,newdata=Test)
+HTWins <- ifelse(HTWins > 0.5,"Yes","No")
+
+submission <- cbind(Test[1],HTWins)
+write.csv(submission,file="SUB15.csv")
+```
+
